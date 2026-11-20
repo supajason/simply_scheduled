@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#03a9f4">
+  <title>Scheduler</title>
+  <link rel="stylesheet" href="./static/style.css">
+  <script src="./static/app.js" defer></script>
+</head>
+<body>
+<main class="shell">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg></div>
+      <div><h1>Scheduler</h1><p>Your devices, on your timetable.</p></div>
+    </div>
+    <div class="header-actions"><button class="secondary" id="openSettings" type="button"><span class="button-symbol" id="settingsIcon"></span> Settings</button><button class="primary desktop-add" id="addTop" type="button"><span class="button-symbol" id="addIcon"></span> New schedule</button></div>
+  </header>
+  <section class="overview" aria-label="Schedule summary">
+    <div class="summary"><span class="sum-icon blue" id="totalIcon"></span><div><div class="sum-number" id="total">0</div><div class="muted">Schedules</div></div></div>
+    <div class="summary"><span class="sum-icon green" id="activeIcon"></span><div><div class="sum-number" id="active">0</div><div class="muted">Enabled</div></div></div>
+    <div class="summary"><span class="sum-icon amber" id="pausedIcon"></span><div><div class="sum-number" id="paused">0</div><div class="muted">Paused</div></div></div>
+  </section>
+  <section class="content">
+    <div class="section-head"><div><h2>Your schedules</h2><p>Everything you've scheduled, all in one place.</p></div><div class="tools"><label class="search-wrap"><span id="searchIcon"></span><input type="search" id="search" placeholder="Search schedules" aria-label="Search schedules"></label><button id="addList" class="primary" type="button">+ New schedule</button></div></div>
+    <div id="list" class="schedule-list" aria-live="polite"></div>
+    <p class="timezone" id="timezone"></p>
+  </section>
+</main>
+
+<div class="overlay" id="editorOverlay" hidden>
+  <div class="backdrop" id="editorBackdrop"></div>
+  <section class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <div class="drawer-header"><div><p class="eyebrow">SCHEDULE DETAILS</p><h2 id="drawerTitle">New schedule</h2><p>Choose a device and when it should run.</p></div><button class="icon-btn" id="closeEditor" type="button" aria-label="Close editor"></button></div>
+    <form id="form">
+      <div class="form-body">
+        <label class="field">Schedule name<input id="name" maxlength="80" required placeholder="e.g. Evening lights" autocomplete="off"></label>
+        <div class="field"><label for="entity">Device</label><select id="entity" required><option value="">Loading devices…</option></select><small id="entityHelp">Choose a device to schedule.</small><div class="entity-ref" id="entityRef" hidden></div></div>
+        <div class="field" id="actionArea"><label>What should it do?</label><div class="action-choices"><label><input type="radio" name="action" value="turn_on" checked><span id="onLabel">Turn on</span></label><label><input type="radio" name="action" value="turn_off"><span id="offLabel">Turn off</span></label></div></div>
+        <div class="advanced" id="advanced" hidden>
+          <div class="advanced-head"><h3 id="advancedTitle">Device settings</h3><p id="advancedDescription">Only options supported by this device are shown.</p></div>
+          <div id="lightOptions" class="device-options" hidden>
+            <label class="opt-check"><input type="checkbox" id="useBrightness"> Set brightness</label>
+            <div class="option-nested" id="brightnessRow" hidden><label for="brightness">Brightness <output id="brightnessValue">70%</output></label><input id="brightness" type="range" min="1" max="100" value="70"></div>
+            <div class="field compact"><label for="lightColourMode">Colour</label><select id="lightColourMode"><option value="none">Leave unchanged</option></select></div>
+            <div class="option-nested" id="kelvinRow" hidden><label for="kelvin">Colour temperature <output id="kelvinValue">3000 K</output></label><input id="kelvin" type="range" min="2000" max="6500" step="50" value="3000"><div class="range-ends"><span>Warm</span><span>Cool</span></div></div>
+            <div class="option-nested" id="rgbRow" hidden><label for="rgb">Choose colour</label><input id="rgb" type="color" value="#ffd18c" aria-label="Light colour"></div>
+          </div>
+          <div id="climateOptions" class="device-options" hidden>
+            <div class="field compact" id="hvacRow"><label for="hvac">Heating / cooling mode</label><select id="hvac"><option value="">Leave unchanged</option></select></div>
+            <label class="opt-check" id="useTemperatureLabel"><input type="checkbox" id="useTemperature"> Set target temperature</label>
+            <div class="option-nested" id="temperatureRow" hidden><label for="temperature">Temperature</label><div class="number-suffix"><input id="temperature" type="number" min="5" max="35" step="0.5" value="20"><span id="tempUnit">°C</span></div></div>
+            <div class="option-nested" id="temperatureRangeRow" hidden><label for="tempLow">Target range</label><div class="range-pair"><div class="number-suffix"><input id="tempLow" type="number" value="19" step="0.5"><span class="tempUnitCopy">°C</span></div><span>to</span><div class="number-suffix"><input id="tempHigh" type="number" value="23" step="0.5"><span class="tempUnitCopy">°C</span></div></div></div>
+          </div>
+          <div id="fanOptions" class="device-options" hidden><label class="opt-check"><input type="checkbox" id="useFanSpeed"> Set fan speed</label><div class="option-nested" id="fanSpeedRow" hidden><label for="fanSpeed">Speed <output id="fanSpeedValue">50%</output></label><input type="range" id="fanSpeed" min="1" max="100" value="50"></div></div>
+          <div id="coverOptions" class="device-options" hidden><label class="opt-check"><input type="checkbox" id="useCoverPosition"> Set a particular position</label><div class="option-nested" id="coverPositionRow" hidden><label for="coverPosition">Open <output id="coverPositionValue">50%</output></label><input id="coverPosition" type="range" min="0" max="100" value="50"></div></div>
+          <div id="humidityOptions" class="device-options" hidden><label class="opt-check"><input type="checkbox" id="useHumidity"> Set target humidity</label><div class="option-nested" id="humidityRow" hidden><label for="humidity">Humidity <output id="humidityValue">50%</output></label><input id="humidity" type="range" min="0" max="100" value="50"></div></div>
+        </div>
+        <div class="field"><label for="time">At what time?</label><input type="time" id="time" value="19:00" required></div>
+        <div class="field"><label>Repeat on</label><div id="days" class="days"><label><input type="checkbox" value="mon" checked><span>Mon</span></label><label><input type="checkbox" value="tue" checked><span>Tue</span></label><label><input type="checkbox" value="wed" checked><span>Wed</span></label><label><input type="checkbox" value="thu" checked><span>Thu</span></label><label><input type="checkbox" value="fri" checked><span>Fri</span></label><label><input type="checkbox" value="sat" checked><span>Sat</span></label><label><input type="checkbox" value="sun" checked><span>Sun</span></label></div></div>
+        <div class="enabled-field"><div><strong>Schedule enabled</strong><small>Switch it off whenever you need to pause it.</small></div><label class="switch"><input id="enabled" type="checkbox" checked><span class="slider"></span></label></div>
+        <p class="form-error" id="formError" role="alert"></p>
+      </div>
+      <div class="form-footer"><button type="button" id="cancelEditor" class="secondary">Cancel</button><button class="primary" id="save" type="submit">Save schedule</button></div>
+    </form>
+  </section>
+</div>
+
+<div class="overlay" id="settingsOverlay" hidden>
+  <div class="backdrop" id="settingsBackdrop"></div>
+  <section class="drawer settings-drawer" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="drawer-header"><div><p class="eyebrow">YOUR PREFERENCES</p><h2 id="settingsTitle">Settings</h2><p>Keep device selection simple.</p></div><button class="icon-btn" id="closeSettings" type="button" aria-label="Close settings"></button></div>
+    <div class="settings-body">
+      <h3>Layout</h3>
+      <div class="settings-option"><div><strong>Group devices by type</strong><small>Separate lights, switches, climate and other controls in the device picker.</small></div><label class="switch"><input type="checkbox" id="groupDevices" checked><span class="slider"></span></label></div>
+      <div class="settings-option"><div><strong>Group schedules by type</strong><small>Show separate sections on the main screen.</small></div><label class="switch"><input type="checkbox" id="groupSchedules" checked><span class="slider"></span></label></div>
+      <div class="settings-divider"></div>
+      <h3>Visible devices</h3>
+      <p class="settings-description">Untick anything you don't want to see when creating a schedule. Existing schedules will continue to run.</p>
+      <label class="search-wrap settings-search"><span id="settingsSearchIcon"></span><input type="search" id="deviceSearch" placeholder="Search devices or entity IDs" aria-label="Search devices"></label>
+      <div class="select-tools"><span id="visibleCount">0 visible</span><div><button type="button" class="text-button" id="showFiltered">Show results</button><button type="button" class="text-button" id="hideFiltered">Hide results</button></div></div>
+      <div id="deviceSettingsList" class="device-settings-list"></div>
+      <p class="form-error" id="settingsError" role="alert"></p>
+    </div>
+    <div class="form-footer settings-footer"><button class="secondary" id="cancelSettings" type="button">Cancel</button><button class="primary" id="saveSettings" type="button">Save settings</button></div>
+  </section>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
